@@ -1,0 +1,61 @@
+# GitHub Actions Workflow for GPU Data Preprocessing
+# Trigger: Push to main/master branch
+# 
+# Workflow ini akan:
+# 1. Setup Python environment
+# 2. Install dependencies
+# 3. Run automate_Shidqi.py untuk preprocessing
+# 4. Commit hasil preprocessing ke repository
+
+name: GPU Data Preprocessing
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'dataset/**'
+      - 'preprocessing/automate_Shidqi.py'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  preprocess:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy scikit-learn
+      
+      - name: Run preprocessing script
+        working-directory: ./preprocessing
+        run: |
+          python automate_Shidqi.py --input ../dataset/gpu_data.csv --output gpu_data_preprocessing
+      
+      - name: Check output file
+        run: |
+          echo "Checking preprocessed file..."
+          ls -la preprocessing/gpu_data_preprocessing/
+          head -n 5 preprocessing/gpu_data_preprocessing/gpu_data_processed.csv
+      
+      - name: Commit preprocessed data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add preprocessing/gpu_data_preprocessing/
+          git diff --staged --quiet || git commit -m "Auto-update: Preprocessed GPU data [skip ci]"
+          git push
